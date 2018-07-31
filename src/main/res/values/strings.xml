@@ -1,0 +1,11 @@
+<resources>
+    <string name="err_func_no_imp">Function not implemented for device</string>
+    <string name="err_not_typewriter">Not a typewriter</string>
+    <string name="err_not_supported">Operation not supported on file</string>
+    <string name="err_not_supp">Operation not supported</string>
+    <string name="err_bad_ioctl">Bad ioctl call for device</string>
+    <string name="err_no_perm">No permission to change attribute</string>
+    <string name="wait_for_perm">Waiting for root shell…</string>
+    <string name="acquire_root">Acquiring root</string>
+    <string name="no_perm">No permission</string>
+</resources>

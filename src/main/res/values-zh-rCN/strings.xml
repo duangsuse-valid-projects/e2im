@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="err_func_no_imp">设备没有实现此功能</string>
+    <string name="err_not_typewriter">文件不可写</string>
+    <string name="err_not_supported">文件不支持这个操作</string>
+    <string name="err_not_supp">不支持此操作</string>
+    <string name="err_bad_ioctl">设备不支持此 ioctl 调用</string>
+    <string name="err_no_perm">无权改变此属性</string>
+    <string name="wait_for_perm">等待 root 命令行</string>
+    <string name="no_perm">没有 root 权限</string>
+    <string name="acquire_root">正在获取 root 权限</string>
+</resources>
