@@ -21,12 +21,18 @@ package org.duangsuse.attrtools;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.support.annotation.IntDef;
+import android.support.annotation.Nullable;
+import android.support.annotation.RestrictTo;
+import android.support.annotation.WorkerThread;
 import android.widget.Toast;
 
 import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -40,63 +46,84 @@ import java.util.TimerTask;
  * @see "e2immutable.c"
  * @since 1.0
  */
+@SuppressWarnings({"unused", "WeakerAccess"})
 public class Ext2Attr implements Closeable {
-    /**
-     * Shell for android apps
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static Ext2Attr e2;
+    public static final int RESULT_CHANGED = 0;
+    public static final int RESULT_UNCHANGED = 1;
+
+    public static final int ERR_NO_SUCH_FILE = -1;
+    public static final int ERR_UNKNOWN = -2;
+    public static final int ERR_MESSAGE = -3;
+
+    // Native result "i" only
+    private static final int ATTRIBUTE_I = 1;
+    // Native result "a" only
+    private static final int ATTRIBUTE_A = 2;
+    // Native result "i" and "a"
+    private static final int ATTRIBUTE_I_A = 3;
+
+    @IntDef(value = {
+            RESULT_CHANGED,
+            RESULT_UNCHANGED
+    })
+    @Retention(RetentionPolicy.CLASS)
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    private @interface ChangeStatus {
+    }
+
+    @IntDef(value = {
+            ERR_NO_SUCH_FILE,
+            ERR_MESSAGE,
+            ERR_UNKNOWN
+    })
+    @Retention(RetentionPolicy.CLASS)
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    private @interface ErrorCode {
+    }
+
+    @IntDef(value = {
+            ATTRIBUTE_I,
+            ATTRIBUTE_A,
+            ATTRIBUTE_I_A
+    })
+    @Retention(RetentionPolicy.CLASS)
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    private @interface Attribute {
+    }
 
     /**
      * Command to execute format
      */
-    private static final String command_fmt = "%1$s %2$s %3$s;printf $?_";
-
-    /**
-     * Exception string
-     */
-    private static final String parse_error_msg = "Cannot parse status";
-
-    /**
-     * Latest error string field
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static String error = "";
+    private static final String COMMAND_FMT = "%1$s %2$s %3$s;printf $?_";
 
     /**
      * E2IM executable path
      */
-    @SuppressWarnings("WeakerAccess")
-    public String lib_path = "libe2im.so";
+    private final String lib_path;
 
     /**
      * Shell executable path
      */
-    @SuppressWarnings("WeakerAccess")
-    public String su_path = "su";
+    private final String su_path;
 
     /**
      * Shell process instance
      */
-    @SuppressWarnings("WeakerAccess")
     public Process shell = null;
 
     /**
      * Shell stdin
      */
-    @SuppressWarnings("WeakerAccess")
     public PrintStream stdin = null;
 
     /**
      * Shell stdout
      */
-    @SuppressWarnings("WeakerAccess")
     public Scanner stdout = null;
 
     /**
      * Shell stderr
      */
-    @SuppressWarnings("WeakerAccess")
     public Scanner stderr = null;
 
     /**
@@ -105,11 +132,26 @@ public class Ext2Attr implements Closeable {
      * @param su_path  Super User binary path
      * @param lib_path e2im program path
      */
-    @SuppressWarnings("unused")
     public Ext2Attr(String su_path, String lib_path) {
         this.su_path = su_path;
         this.lib_path = lib_path;
-        new Thread(this::connect).start();
+    }
+
+
+    /**
+     * Construct a new instance using custom executable
+     *
+     * @param lib_path e2im executable library path
+     */
+    public Ext2Attr(String lib_path) {
+        this(lib_path, "su");
+    }
+
+    /**
+     * Create instance with default configs
+     */
+    public Ext2Attr() {
+        this("libe2im.so", "su");
     }
 
     /**
@@ -118,7 +160,6 @@ public class Ext2Attr implements Closeable {
      * @param ctx app context
      * @return full path of executable
      */
-    @SuppressWarnings("WeakerAccess")
     public static String getExecPath(Context ctx) {
         return ctx.getApplicationInfo().nativeLibraryDir + "/libe2im.so";
     }
@@ -160,6 +201,7 @@ public class Ext2Attr implements Closeable {
      * @param fn  function to execute after shell created
      */
     public static void acquireRoot(Context ctx, Runnable fn) {
+        Ext2Attr instance = new Ext2Attr(getExecPath(ctx));
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
             Toast.makeText(ctx, e.getMessage(), Toast.LENGTH_LONG).show();
             e.printStackTrace();
@@ -174,34 +216,14 @@ public class Ext2Attr implements Closeable {
                 .setCancelable(false)
                 .setOnCancelListener((v) -> fn.run()).show();
 
-        e2 = new Ext2Attr(getExecPath(ctx));
-
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
                 // noinspection StatementWithEmptyBody
-                while (e2.not_connected());
+                while (instance.isNotConnected());
                 a.cancel();
             }
         }, 100);
-    }
-
-    /**
-     * Construct a new instance using custom executable
-     *
-     * @param lib_path e2im executable library path
-     */
-    @SuppressWarnings("WeakerAccess")
-    public Ext2Attr(String lib_path) {
-        this.lib_path = lib_path;
-        new Thread(this::connect).start();
-    }
-
-    /**
-     * Use this constructor to avoid <code>connect()</code> when started
-     */
-    @SuppressWarnings("unused")
-    public Ext2Attr() {
     }
 
     /**
@@ -219,9 +241,9 @@ public class Ext2Attr implements Closeable {
     }
 
     /**
-     * Connect with shell
+     * Connect with shell, running on the main thread is strongly not recommend.
      */
-    @SuppressWarnings("WeakerAccess")
+    @WorkerThread
     public void connect() {
         try {
             shell = Runtime.getRuntime().exec(this.su_path);
@@ -241,10 +263,16 @@ public class Ext2Attr implements Closeable {
     /**
      * Not connected with shell?
      *
+     * @deprecated use {@link #isNotConnected()} instead.
      * @return is not connected with root shell
      */
     @SuppressWarnings("WeakerAccess")
+    @Deprecated
     public boolean not_connected() {
+        return isNotConnected();
+    }
+
+    public boolean isNotConnected () {
         return shell == null || stdin == null || !isAlive(shell);
     }
 
@@ -274,29 +302,25 @@ public class Ext2Attr implements Closeable {
      * 2 for +a<p>
      * 3 for +i+a<p>
      * -1 for no file
-     * @throws RuntimeException reading attr fails
+     * @throws ShellException reading attr fails
      */
-    public byte query(String path) throws RuntimeException {
-        String command = String.format(command_fmt, lib_path, '@', path);
+    @Attribute
+    public int query(String path) throws ShellException {
+        String command = String.format(COMMAND_FMT, lib_path, '@', path);
         stdin.println(command);
         stdin.flush();
-
-        switch (stdout.nextInt()) {
-            case 0:
-                return 0;
-            case 255:
-                return -1;
-            case 254:
-                error = stderr.nextLine();
-                throw new RuntimeException(error);
-            case 1:
-                return 1;
-            case 2:
-                return 2;
-            case 3:
-                return 3;
+        int result = stdout.nextInt();
+        switch (result) {
+            case ATTRIBUTE_I:
+                return ATTRIBUTE_I;
+            case ATTRIBUTE_A:
+                return ATTRIBUTE_A;
+            case ATTRIBUTE_I_A:
+                return ATTRIBUTE_I_A;
             default:
-                throw new RuntimeException(parse_error_msg);
+                // Parse other result codes
+                readException(result);
+                return ATTRIBUTE_I;
         }
     }
 
@@ -308,25 +332,23 @@ public class Ext2Attr implements Closeable {
      * @return 0 for changed<p>
      * 1 for unchanged<p>
      * -1 for no file
-     * @throws RuntimeException reading or changing attr fails
+     * @throws ShellException reading or changing attr fails
      */
-    public byte addi(String path) throws RuntimeException {
-        String command = String.format(command_fmt, lib_path, '+', path);
+    @ChangeStatus
+    public int addi(String path) throws ShellException {
+        String command = String.format(COMMAND_FMT, lib_path, '+', path);
         stdin.println(command);
         stdin.flush();
-
-        switch (stdout.nextInt()) {
-            case 0:
-                return 0;
-            case 1:
-                return 1;
-            case 255:
-                return -1;
-            case 254:
-                error = stderr.nextLine();
-                throw new RuntimeException(error);
+        int result = stdout.nextInt();
+        switch (result) {
+            case RESULT_CHANGED:
+                return RESULT_CHANGED;
+            case RESULT_UNCHANGED:
+                return RESULT_UNCHANGED;
             default:
-                throw new RuntimeException(parse_error_msg);
+                // Parse other result codes
+                readException(result);
+                return RESULT_UNCHANGED;
         }
     }
 
@@ -338,25 +360,77 @@ public class Ext2Attr implements Closeable {
      * @return 0 for changed<p>
      * 1 for unchanged<p>
      * -1 for no file
-     * @throws RuntimeException reading or changing attr fails
+     * @throws ShellException reading or changing attr fails
      */
-    public byte subi(String path) throws RuntimeException {
-        String command = String.format(command_fmt, lib_path, '-', path);
+    @ChangeStatus
+    public int subi(String path) throws ShellException {
+        String command = String.format(COMMAND_FMT, lib_path, '-', path);
         stdin.println(command);
         stdin.flush();
 
-        switch (stdout.nextInt()) {
-            case 0:
-                return 0;
-            case 1:
-                return 1;
-            case 255:
-                return -1;
-            case 254:
-                error = stderr.nextLine();
-                throw new RuntimeException(error);
+        int result = stdout.nextInt();
+        switch (result) {
+            case RESULT_CHANGED:
+                return RESULT_CHANGED;
+            case RESULT_UNCHANGED:
+                return RESULT_UNCHANGED;
             default:
-                throw new RuntimeException(parse_error_msg);
+                // Parse other result codes
+                readException(result);
+                return RESULT_UNCHANGED;
+        }
+    }
+
+    private void readException(int value) throws ShellException {
+        switch (value) {
+            case 255:
+                throw new ShellException(ERR_NO_SUCH_FILE);
+            case 254:
+                throw new ShellException(stderr.nextLine());
+            default:
+                throw new ShellException(ERR_UNKNOWN);
+        }
+    }
+
+    public static class ShellException extends Exception {
+        @ErrorCode
+        private int code;
+        private String message;
+
+        public ShellException(String message) {
+            this(ERR_MESSAGE, message);
+        }
+
+        public ShellException (@ErrorCode int code, @Nullable String message) {
+            super(message);
+            this.code = code;
+            this.message = message;
+        }
+
+        public ShellException (@ErrorCode int code) {
+            this(code, null);
+        }
+
+        public int getCode() {
+            return code;
+        }
+
+        public void setCode(int code) {
+            this.code = code;
+        }
+
+        @Override
+        public String getMessage() {
+            return message;
+        }
+
+        public void setMessage(String message) {
+            this.message = message;
+        }
+
+        @Override
+        public String toString () {
+            return String.format("(%1$s)%2$s", getCode(), getMessage());
         }
     }
 }
