@@ -6,7 +6,7 @@
     <string name="err_not_supp">不支持此操作</string>
     <string name="err_bad_ioctl">設備不支持此 ioctl 調用</string>
     <string name="err_no_perm">無權改變此屬性</string>
-    <string name="wait_for_perm">等待 root 命令行</string>
+    <string name="wait_for_perm">等待 root 命令行…</string>
     <string name="no_perm">沒有 root 權限</string>
-    <string name="acquire_root">正在獲取 root 權限</string>
+    <string name="acquire_root">正在獲取 root 權限…</string>
 </resources>

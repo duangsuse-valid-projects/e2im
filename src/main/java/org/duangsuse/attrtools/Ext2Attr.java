@@ -45,7 +45,8 @@ import java.util.TimerTask;
  * Ext2 like filesystem file attribute manipulation library
  *
  * @author duangsuse
- * @version 1.2
+ * @author trumeet
+ * @version 1.3
  * @see "https://github.com/duangsuse/attrtools"
  * @see "e2immutable.c"
  * @since 1.0
@@ -53,6 +54,8 @@ import java.util.TimerTask;
 @SuppressWarnings({"unused", "WeakerAccess"})
 public class Ext2Attr implements Closeable {
     private static final String TAG = "Ext2Attr";
+    private static final String DEFAULT_LIB_PATH = "e2im";
+    private static final String DEFAULT_SU_PATH = "su";
 
     public static final int RESULT_CHANGED = 0;
     public static final int RESULT_UNCHANGED = 1;
@@ -61,13 +64,23 @@ public class Ext2Attr implements Closeable {
     public static final int ERR_UNKNOWN = -2;
     public static final int ERR_MESSAGE = -3;
 
-    // Native result "i" only
+    /**
+     * Native result "i" only
+     */
     public static final int ATTRIBUTE_I = 1;
-    // Native result "a" only
+    /**
+     * Native result "a" only
+     */
     public static final int ATTRIBUTE_A = 2;
-    // Native result "i" and "a"
+    /**
+     * Native result "i" and "a"
+     */
     public static final int ATTRIBUTE_I_A = 3;
+    public static final String LIBE2IM_NAME = "/libe2im.so";
 
+    /**
+     * Status change state
+     */
     @IntDef(value = {
             RESULT_CHANGED,
             RESULT_UNCHANGED
@@ -77,6 +90,9 @@ public class Ext2Attr implements Closeable {
     private @interface ChangeStatus {
     }
 
+    /**
+     * Error codes
+     */
     @IntDef(value = {
             ERR_NO_SUCH_FILE,
             ERR_MESSAGE,
@@ -87,6 +103,9 @@ public class Ext2Attr implements Closeable {
     private @interface ErrorCode {
     }
 
+    /**
+     * File attributes
+     */
     @IntDef(value = {
             ATTRIBUTE_I,
             ATTRIBUTE_A,
@@ -135,7 +154,7 @@ public class Ext2Attr implements Closeable {
     /**
      * Default constructor
      *
-     * @param su_path  Super User binary path
+     * @param su_path  superuser binary path
      * @param lib_path e2im program path
      */
     public Ext2Attr(String su_path, String lib_path) {
@@ -143,29 +162,32 @@ public class Ext2Attr implements Closeable {
         this.lib_path = lib_path;
     }
 
-
     /**
      * Construct a new instance using custom executable
      *
      * @param lib_path e2im executable library path
      */
     public Ext2Attr(String lib_path) {
-        this(lib_path, "su");
+        this(DEFAULT_SU_PATH, lib_path);
     }
 
     /**
-     * Create instance with default configs
+     * Create instance for Android with default config
+     *
+     * @param context application context
      */
     public Ext2Attr(@NonNull Context context) {
-        this("su", getExecPath(context));
+        this(DEFAULT_SU_PATH, getExecPath(context));
     }
 
     /**
+     * Get Ext2Attr initialized using default Android context
+     *
      * @deprecated Use {@link #Ext2Attr(Context)} instead
      */
     @Deprecated
     @MainThread
-    public Ext2Attr () {
+    public Ext2Attr() {
         this(AppGlobals.getInitialApplication());
     }
 
@@ -175,8 +197,9 @@ public class Ext2Attr implements Closeable {
      * @param ctx app context
      * @return full path of executable
      */
+    @NonNull
     public static String getExecPath(Context ctx) {
-        return ctx.getApplicationInfo().nativeLibraryDir + "/libe2im.so";
+        return ctx.getApplicationInfo().nativeLibraryDir + LIBE2IM_NAME;
     }
 
     /**
@@ -186,6 +209,7 @@ public class Ext2Attr implements Closeable {
      * @param message text to translate
      * @return translated text
      */
+    @NonNull
     public static String mapMessage(Context ctx, String message) {
         if (message == null)
             return ctx.getString(R.string.no_perm);
@@ -210,7 +234,7 @@ public class Ext2Attr implements Closeable {
     /**
      * Show 'acquire root' dialog<p>
      * <strong>Warning: you must reset default exception handler after calling this method</strong><p>
-     * This dialog won't colsed until root shell is created
+     * This dialog won't be closed until root shell is created
      *
      * @param ctx app context
      * @param fn  function to execute after shell created
@@ -257,7 +281,8 @@ public class Ext2Attr implements Closeable {
 
     /**
      * Connect with shell, running on the main thread is strongly not recommend.
-     * @return Successful
+     *
+     * @return Is connected successfully
      */
     @WorkerThread
     public boolean connect() {
@@ -281,8 +306,8 @@ public class Ext2Attr implements Closeable {
     /**
      * Not connected with shell?
      *
-     * @deprecated use {@link #isNotConnected()} instead.
      * @return is not connected with root shell
+     * @deprecated use {@link #isNotConnected()} instead.
      */
     @SuppressWarnings("WeakerAccess")
     @Deprecated
@@ -290,14 +315,14 @@ public class Ext2Attr implements Closeable {
         return isNotConnected();
     }
 
-    public boolean isNotConnected () {
+    public boolean isNotConnected() {
         return shell == null || stdin == null || !isAlive(shell);
     }
 
     /**
      * Is a process alive?
      *
-     * @param p target process
+     * @param p target process object
      * @return true if alive
      */
     private static boolean isAlive(Process p) {
@@ -313,13 +338,12 @@ public class Ext2Attr implements Closeable {
     /**
      * Query file attribute
      *
-     * @param path path to qurey, must be standard file
-     *
-     * @return 0 for no attribute<p>
-     * 1 for +i<p>
-     * 2 for +a<p>
-     * 3 for +i+a<p>
-     * -1 for no file
+     * @param path path to query, must be standard file
+     * @return <strong>0</strong> for no attribute<p>
+     * <strong>1</strong> for +i<p>
+     * <strong>2</strong> for +a<p>
+     * <strong>3</strong> for +i+a<p>
+     * <strong>-1</strong> for no file
      * @throws ShellException reading attr fails
      */
     @Attribute
@@ -327,6 +351,7 @@ public class Ext2Attr implements Closeable {
         String command = String.format(COMMAND_FMT, lib_path, '@', path);
         stdin.println(command);
         stdin.flush();
+
         int result = stdout.nextInt();
         switch (result) {
             case ATTRIBUTE_I:
@@ -338,18 +363,17 @@ public class Ext2Attr implements Closeable {
             default:
                 // Parse other result codes
                 readException(result);
-                return ATTRIBUTE_I;
+                return ATTRIBUTE_I; // Never reached
         }
     }
 
     /**
-     * File attribute +i
+     * File attribute +i (make immutable)
      *
      * @param path path to add immutable, must be standard file
-     *
-     * @return 0 for changed<p>
-     * 1 for unchanged<p>
-     * -1 for no file
+     * @return <strong>0</strong> for changed<p>
+     * <strong>1</strong> for unchanged<p>
+     * <stong>-1</stong> for no file
      * @throws ShellException reading or changing attr fails
      */
     @ChangeStatus
@@ -357,6 +381,7 @@ public class Ext2Attr implements Closeable {
         String command = String.format(COMMAND_FMT, lib_path, '+', path);
         stdin.println(command);
         stdin.flush();
+
         int result = stdout.nextInt();
         switch (result) {
             case RESULT_CHANGED:
@@ -366,18 +391,17 @@ public class Ext2Attr implements Closeable {
             default:
                 // Parse other result codes
                 readException(result);
-                return RESULT_UNCHANGED;
+                return RESULT_UNCHANGED; // Never reached
         }
     }
 
     /**
-     * File attribute -i
+     * File attribute -i (make mutable)
      *
-     * @param path path to qurey, must be standard file
-     *
-     * @return 0 for changed<p>
-     * 1 for unchanged<p>
-     * -1 for no file
+     * @param path path to query, must be standard file
+     * @return <strong>0</strong> for changed<p>
+     * <strong>1</strong> for unchanged<p>
+     * <strong>-1</strong> for no file
      * @throws ShellException reading or changing attr fails
      */
     @ChangeStatus
@@ -395,10 +419,16 @@ public class Ext2Attr implements Closeable {
             default:
                 // Parse other result codes
                 readException(result);
-                return RESULT_UNCHANGED;
+                return RESULT_UNCHANGED; // Never reached
         }
     }
 
+    /**
+     * Read e2im util errno to exception
+     *
+     * @param value exit value
+     * @throws ShellException always throws
+     */
     private void readException(int value) throws ShellException {
         switch (value) {
             case 255:
@@ -410,22 +440,44 @@ public class Ext2Attr implements Closeable {
         }
     }
 
+    /**
+     * Exception explaining the e2im binary is returning an error instead of result
+     *
+     * @author trumeet
+     * @since 1.3
+     */
     public static class ShellException extends Exception {
         @ErrorCode
         private int code;
         private String message;
 
+        /**
+         * Construct a new instance using error message
+         *
+         * @param message error message
+         */
         public ShellException(String message) {
             this(ERR_MESSAGE, message);
         }
 
-        public ShellException (@ErrorCode int code, @Nullable String message) {
+        /**
+         * Construct a new instance using error code and message
+         *
+         * @param code    error code
+         * @param message error message
+         */
+        public ShellException(@ErrorCode int code, @Nullable String message) {
             super(message);
             this.code = code;
             this.message = message;
         }
 
-        public ShellException (@ErrorCode int code) {
+        /**
+         * Construct a new instance using error code
+         *
+         * @param code exit code
+         */
+        public ShellException(@ErrorCode int code) {
             this(code, null);
         }
 
@@ -442,12 +494,32 @@ public class Ext2Attr implements Closeable {
             return message;
         }
 
+        /**
+         * @deprecated It's bad to use default Android context, use {@link #getTranslatedMessage(Context)}
+         */
+        @Override
+        @MainThread
+        @Deprecated
+        public String getLocalizedMessage() {
+            return mapMessage(AppGlobals.getInitialApplication(), message);
+        }
+
+        /**
+         * Gets translated native error message
+         *
+         * @param ctx Android context
+         * @return translated error message
+         */
+        public String getTranslatedMessage(Context ctx) {
+            return mapMessage(ctx, message);
+        }
+
         public void setMessage(String message) {
             this.message = message;
         }
 
         @Override
-        public String toString () {
+        public String toString() {
             return String.format("(%1$s)%2$s", getCode(), getMessage());
         }
     }
