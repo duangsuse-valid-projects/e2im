@@ -151,7 +151,7 @@ public class Ext2Attr implements Closeable {
      * Create instance with default configs
      */
     public Ext2Attr() {
-        this("libe2im.so", "su");
+        this("su", "libe2im.so");
     }
 
     /**
