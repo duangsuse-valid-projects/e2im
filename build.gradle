@@ -19,7 +19,8 @@ android {
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android.txt')
+            consumerProguardFiles 'proguard-rules.pro'
         }
     }
 
@@ -56,8 +57,13 @@ allprojects {
     }
 }
 
+ext {
+    supportLibraryVersion = '27.0.2'
+}
+
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-
+    // 目前只用到了注解，为了不于其他库冲突（版本问题），这里只 compile
+    compileOnly "com.android.support:support-v4:$supportLibraryVersion"
     testImplementation 'junit:junit:4.12'
 }
