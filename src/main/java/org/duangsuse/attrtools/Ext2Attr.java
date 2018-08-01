@@ -20,8 +20,11 @@
 package org.duangsuse.attrtools;
 
 import android.app.AlertDialog;
+import android.app.AppGlobals;
 import android.content.Context;
 import android.support.annotation.IntDef;
+import android.support.annotation.MainThread;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RestrictTo;
 import android.support.annotation.WorkerThread;
@@ -153,8 +156,17 @@ public class Ext2Attr implements Closeable {
     /**
      * Create instance with default configs
      */
-    public Ext2Attr() {
-        this("su", "libe2im.so");
+    public Ext2Attr(@NonNull Context context) {
+        this("su", getExecPath(context));
+    }
+
+    /**
+     * @deprecated Use {@link #Ext2Attr(Context)} instead
+     */
+    @Deprecated
+    @MainThread
+    public Ext2Attr () {
+        this(AppGlobals.getInitialApplication());
     }
 
     /**
