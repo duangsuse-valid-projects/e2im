@@ -25,6 +25,7 @@ import android.support.annotation.IntDef;
 import android.support.annotation.Nullable;
 import android.support.annotation.RestrictTo;
 import android.support.annotation.WorkerThread;
+import android.util.Log;
 import android.widget.Toast;
 
 import java.io.Closeable;
@@ -48,6 +49,8 @@ import java.util.TimerTask;
  */
 @SuppressWarnings({"unused", "WeakerAccess"})
 public class Ext2Attr implements Closeable {
+    private static final String TAG = "Ext2Attr";
+
     public static final int RESULT_CHANGED = 0;
     public static final int RESULT_UNCHANGED = 1;
 
@@ -242,22 +245,25 @@ public class Ext2Attr implements Closeable {
 
     /**
      * Connect with shell, running on the main thread is strongly not recommend.
+     * @return Successful
      */
     @WorkerThread
-    public void connect() {
+    public boolean connect() {
         try {
             shell = Runtime.getRuntime().exec(this.su_path);
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.e(TAG, "connect", e);
+            return false;
         }
 
         if (shell == null)
-            return;
+            return false;
 
         stdin = new PrintStream(shell.getOutputStream());
         stdout = new Scanner(new DataInputStream(shell.getInputStream()));
         stderr = new Scanner(new DataInputStream(shell.getErrorStream()));
         stdout.useDelimiter("_");
+        return true;
     }
 
     /**
