@@ -62,11 +62,11 @@ public class Ext2Attr implements Closeable {
     public static final int ERR_MESSAGE = -3;
 
     // Native result "i" only
-    private static final int ATTRIBUTE_I = 1;
+    public static final int ATTRIBUTE_I = 1;
     // Native result "a" only
-    private static final int ATTRIBUTE_A = 2;
+    public static final int ATTRIBUTE_A = 2;
     // Native result "i" and "a"
-    private static final int ATTRIBUTE_I_A = 3;
+    public static final int ATTRIBUTE_I_A = 3;
 
     @IntDef(value = {
             RESULT_CHANGED,
