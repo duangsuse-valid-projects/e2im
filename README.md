@@ -4,6 +4,47 @@
 
 [![JetPack](https://jitpack.io/v/duangsuse/e2im.svg)](https://jitpack.io/#duangsuse/e2im)
 
+# Usage
+## Connect to Root Shell
+Create an Ext2Attr instance:
+```java
+Ext2Attr instance = new Ext2Attr(context);
+```
+Connect to Root Shell:
+```java
+boolean success = instance.connect();
+```
+You can check the result from the return value.
+## Query the "I" and "a" attributes
+Once connected, you can query attributes via the `query(path)` method:
+```java
+try {
+  int result = instance.query(path);
+} catch (ShellException e) {
+}
+```
+## Add the "I" attribute
+Once connected, you can add the "I" attribute via the `addi(path)` method:
+```java
+try {
+  int result = instance.addi(path);
+} catch (ShellException e) {
+}
+```
+## Remove the "I" attribute
+Once connected, you can remove the "I" attribute via the `subi(path)` method:
+```java
+try {
+  int result = instance.subi(path);
+} catch (ShellException e) {
+}
+```
+## Don't forget to close the shell
+You can close the root shell by using the `close()` method:
+```java
+instance.close();
+```
+
 
 ## Licenses
 
