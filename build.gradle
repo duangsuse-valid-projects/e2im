@@ -17,6 +17,7 @@ android {
         ndk {
             abiFilters 'armeabi-v7a', 'x86', 'arm64-v8a', 'x86_64'
         }
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -76,5 +77,6 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     // 目前只用到了注解，为了不于其他库冲突（版本问题），这里只 compile
     compileOnly "com.android.support:support-v4:$supportLibraryVersion"
+    androidTestImplementation('com.android.support.test:runner:0.5')
     testImplementation 'junit:junit:4.12'
 }

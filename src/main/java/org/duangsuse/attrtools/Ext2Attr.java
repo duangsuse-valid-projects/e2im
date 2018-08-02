@@ -270,12 +270,11 @@ public class Ext2Attr implements Closeable {
      */
     @Override
     public void close() {
-        stdin.println("exit");
-        stdin.flush();
+        executeCommand("exit");
         try {
             shell.waitFor();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Log.e(TAG, "close", e);
         }
     }
 
@@ -349,8 +348,7 @@ public class Ext2Attr implements Closeable {
     @Attribute
     public int query(String path) throws ShellException {
         String command = String.format(COMMAND_FMT, lib_path, '@', path);
-        stdin.println(command);
-        stdin.flush();
+        executeCommand(command);
 
         int result = stdout.nextInt();
         switch (result) {
@@ -379,8 +377,7 @@ public class Ext2Attr implements Closeable {
     @ChangeStatus
     public int addi(String path) throws ShellException {
         String command = String.format(COMMAND_FMT, lib_path, '+', path);
-        stdin.println(command);
-        stdin.flush();
+        executeCommand(command);
 
         int result = stdout.nextInt();
         switch (result) {
@@ -407,8 +404,7 @@ public class Ext2Attr implements Closeable {
     @ChangeStatus
     public int subi(String path) throws ShellException {
         String command = String.format(COMMAND_FMT, lib_path, '-', path);
-        stdin.println(command);
-        stdin.flush();
+        executeCommand(command);
 
         int result = stdout.nextInt();
         switch (result) {
@@ -430,6 +426,7 @@ public class Ext2Attr implements Closeable {
      * @throws ShellException always throws
      */
     private void readException(int value) throws ShellException {
+        Log.e(TAG, "Handling error code from native: " + value);
         switch (value) {
             case 255:
                 throw new ShellException(ERR_NO_SUCH_FILE);
@@ -438,6 +435,11 @@ public class Ext2Attr implements Closeable {
             default:
                 throw new ShellException(ERR_UNKNOWN);
         }
+    }
+
+    public void executeCommand (String command) {
+        stdin.println(command);
+        stdin.flush();
     }
 
     /**
