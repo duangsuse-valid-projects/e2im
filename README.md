@@ -31,7 +31,7 @@ try {
 } catch (ShellException e) {
 }
 ```
-## Add the "I" attribute
+## Remove the "I" attribute
 Once connected, you can remove the "I" attribute via the `subi(path)` method:
 ```java
 try {
