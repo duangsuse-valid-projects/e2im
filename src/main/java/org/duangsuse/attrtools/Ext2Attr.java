@@ -77,7 +77,7 @@ public class Ext2Attr implements Closeable {
      */
     public static final int ATTRIBUTE_I_A = 3;
     /**
-     * Native result none, no "I" and "A"
+     * Native result none, no "i" and "a"
      */
     public static final int ATTRIBUTE_NONE = 0;
 
