@@ -17,6 +17,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Tests for {@link Ext2Attr}, <strong>Must be running on a rooted device</strong>.
+ */
 @RunWith(AndroidJUnit4.class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class Ext2AttrTest {
@@ -63,7 +66,7 @@ public class Ext2AttrTest {
         assertEquals(mInstance.subi(mTestFile.getAbsolutePath()),
                 Ext2Attr.RESULT_CHANGED);
         int queryResult = mInstance.query(mTestFile.getAbsolutePath());
-        assertEquals(queryResult, Ext2Attr.ATTRIBUTE_A);
+        assertEquals(queryResult, Ext2Attr.ATTRIBUTE_NONE);
     }
 
     @Test
