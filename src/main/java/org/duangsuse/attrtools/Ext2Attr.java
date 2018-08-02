@@ -76,6 +76,11 @@ public class Ext2Attr implements Closeable {
      * Native result "i" and "a"
      */
     public static final int ATTRIBUTE_I_A = 3;
+    /**
+     * Native result none, no "I" and "A"
+     */
+    public static final int ATTRIBUTE_NONE = 0;
+
     public static final String LIBE2IM_NAME = "/libe2im.so";
 
     /**
@@ -109,7 +114,8 @@ public class Ext2Attr implements Closeable {
     @IntDef(value = {
             ATTRIBUTE_I,
             ATTRIBUTE_A,
-            ATTRIBUTE_I_A
+            ATTRIBUTE_I_A,
+            ATTRIBUTE_NONE
     })
     @Retention(RetentionPolicy.CLASS)
     @RestrictTo(RestrictTo.Scope.LIBRARY)
@@ -358,6 +364,8 @@ public class Ext2Attr implements Closeable {
                 return ATTRIBUTE_A;
             case ATTRIBUTE_I_A:
                 return ATTRIBUTE_I_A;
+            case ATTRIBUTE_NONE:
+                return ATTRIBUTE_NONE;
             default:
                 // Parse other result codes
                 readException(result);
