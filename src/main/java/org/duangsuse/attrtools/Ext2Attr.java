@@ -46,7 +46,7 @@ import java.util.TimerTask;
  *
  * @author duangsuse
  * @author trumeet
- * @version 1.3
+ * @version 1.4
  * @see "https://github.com/duangsuse/attrtools"
  * @see "e2immutable.c"
  * @since 1.0
