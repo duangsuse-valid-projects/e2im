@@ -400,6 +400,7 @@ public class Ext2Attr implements Closeable {
     }
 
     private void readException(int value) throws ShellException {
+        Log.e(TAG, "Handling error code from native: " + value);
         switch (value) {
             case 255:
                 throw new ShellException(ERR_NO_SUCH_FILE);
