@@ -6,6 +6,6 @@
     <string name="err_bad_ioctl">Bad ioctl call for device</string>
     <string name="err_no_perm">No permission to change attribute</string>
     <string name="wait_for_perm">Waiting for root shell…</string>
-    <string name="acquire_root">Acquiring root</string>
+    <string name="acquire_root">Acquiring root…</string>
     <string name="no_perm">No permission</string>
 </resources>

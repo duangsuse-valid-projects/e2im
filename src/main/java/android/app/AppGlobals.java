@@ -8,5 +8,4 @@ public class AppGlobals {
     public static Application getInitialApplication() {
         throw new RuntimeException("Stub!");
     }
-
 }
